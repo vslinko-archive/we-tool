@@ -92,10 +92,10 @@ nomnom.command('enter')
     cli.enter();
   });
 
-nomnom.command('run')
-  .help('run local server')
+nomnom.command('proxy')
+  .help('run local proxy server')
   .callback(function() {
-    cli.run();
+    cli.proxy();
   });
 
 nomnom.parse();

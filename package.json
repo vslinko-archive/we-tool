@@ -14,7 +14,8 @@
     "email": "vslinko@yahoo.com"
   },
   "bin": {
-    "we": "./bin/we"
+    "we": "./bin/we",
+    "we-proxy": "./bin/we-proxy"
   },
   "repository": {
     "type": "git",
@@ -25,7 +26,8 @@
     "nomnom": "~1.8",
     "winston": "~0.8",
     "request": "~2.48",
-    "object-assign": "~1.0"
+    "object-assign": "~1.0",
+    "express": "~4.10"
   },
   "os": ["darwin"]
 }
