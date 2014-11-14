@@ -1,0 +1,31 @@
+{
+  "name": "we-tool",
+  "version": "0.1.0",
+  "description": "Docker workspaces management utility",
+  "keywords": ["docker", "workspace", "container", "boot2docker"],
+  "homepage": "https://github.com/vslinko/we-tool",
+  "bugs": {
+    "url": "https://github.com/vslinko/we-tool/issues",
+    "email": "vslinko@yahoo.com"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Vyacheslav Slinko",
+    "email": "vslinko@yahoo.com"
+  },
+  "bin": {
+    "we": "./bin/we"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vslinko/we-tool.git"
+  },
+  "dependencies": {
+    "when": "~3.6",
+    "nomnom": "~1.8",
+    "winston": "~0.8",
+    "request": "~2.48",
+    "object-assign": "~1.0"
+  },
+  "os": ["darwin"]
+}
