@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+
+var format = require('util').format;
+var path = require('path');
+var fs = require('fs');
+var handlebars = require('handlebars');
+var express = require('express');
+var when = require('when');
+var containerFactory = require('../lib/containerFactory');
+var util = require('../lib/util');
+
+var pageTemplate = handlebars.compile(
+  '<!DOCTYPE html><html><head><title>we-daemon - {{ title }}</title></head><body>{{{ body }}}</body></html>'
+);
+
+var containersListTemplate = handlebars.compile(
+  '<ul>{{#containers}}<li><a href="{{url}}">{{name}}</a></li>{{/containers}}</ul>'
+);
+
+var certsPath = path.join(process.env.HOME, '.boot2docker', 'certs', 'boot2docker-vm');
+var spec = {
+  hostname: '192.168.59.103',
+  port: 2376,
+  configFileName: '.we.json',
+  certsPath: certsPath,
+  key: fs.readFileSync(path.join(certsPath, 'key.pem')).toString(),
+  cert: fs.readFileSync(path.join(certsPath, 'cert.pem')).toString(),
+  ca: fs.readFileSync(path.join(certsPath, 'ca.pem')).toString()
+};
+var container = containerFactory(spec);
+
+var logger = container.logger;
+var docker = container.docker;
+
+var app = express();
+
+app.get('/', function(req, res) {
+  docker.getContainers()
+    .then(function(containers) {
+      containers = containers.filter(function(container) {
+        return !!util.getHttpPublicPort(container);
+      }).map(function(container) {
+        var port = util.getHttpPublicPort(container);
+
+        return {
+          name: container.Names[0].replace(/^\//, ''),
+          url: format('/container/%s/open', container.Id)
+        };
+      });
+
+      res.status(200).send(pageTemplate({
+        title: 'Containers',
+        body: containersListTemplate({
+          containers: containers
+        })
+      }));
+    })
+    .then(null, function() {
+      logger.error(err.message);
+      res.status(500).send();
+    });
+});
+
+app.get('/container/:id/open', function(req, res) {
+  docker.getContainers()
+    .then(function(containers) {
+      var container = containers.filter(function(container) {
+        return container.Id == req.params.id;
+      }).shift();
+
+      if (!container) {
+        res.status(404).send();
+        return;
+      }
+
+      var port = util.getHttpPublicPort(container);
+
+      if (!port) {
+        res.status(404).send();
+        return;
+      }
+
+      if (!util.containerIsStarted(container)) {
+        return docker.startContainer(container.Id)
+          .then(function() {
+            var deferred = when.defer();
+            setTimeout(deferred.resolve, 1000);
+            return deferred.promise;
+          })
+          .then(function() { return port; });
+      }
+
+      return port;
+    })
+    .then(function(port) {
+      res.redirect(format(
+        'http://%s:%d',
+        spec.hostname,
+        port
+      ));
+    })
+    .then(null, function(err) {
+      logger.error(err.message);
+      res.status(500).send();
+    });
+});
+
+app.listen(process.env.PORT || 9000);

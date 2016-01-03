@@ -4,52 +4,17 @@ var path = require('path');
 var fs = require('fs');
 var winston = require('winston');
 var nomnom = require('nomnom');
-var boot2dockerApi = require('../lib/boot2dockerApi');
-var dockerApi = require('../lib/dockerApi');
-var cliApi = require('../lib/cliApi');
+var containerFactory = require('../lib/containerFactory');
 
-var hostname = '192.168.59.103';
-var port = 2376;
-var configFileName = '.we.json';
 var certsPath = path.join(process.env.HOME, '.boot2docker', 'certs', 'boot2docker-vm');
-var key = fs.readFileSync(path.join(certsPath, 'key.pem')).toString();
-var cert = fs.readFileSync(path.join(certsPath, 'cert.pem')).toString();
-var ca = fs.readFileSync(path.join(certsPath, 'ca.pem')).toString();
-
-var logger = new winston.Logger({
-  transports: [
-    new winston.transports.Console({
-      level: 'info',
-      colorize: true,
-      timestamp: true
-    })
-  ]
-});
-
-var boot2docker = boot2dockerApi({
-  logger: logger
-});
-
-var docker = dockerApi({
-  logger: logger,
-  hostname: hostname,
-  port: port,
-  key: key,
-  cert: cert,
-  ca: ca
-});
-
-var cli = cliApi({
-  logger: logger,
-  boot2docker: boot2docker,
-  docker: docker,
-  configFileName: configFileName,
-  hostname: hostname,
-  port: port,
+var container = containerFactory({
+  hostname: '192.168.59.103',
+  port: 2376,
+  configFileName: '.we.json',
   certsPath: certsPath,
-  cwd: process.cwd(),
-  env: process.env,
-  exit: process.exit
+  key: fs.readFileSync(path.join(certsPath, 'key.pem')).toString(),
+  cert: fs.readFileSync(path.join(certsPath, 'cert.pem')).toString(),
+  ca: fs.readFileSync(path.join(certsPath, 'ca.pem')).toString()
 });
 
 nomnom.option('logLevel', {
@@ -58,24 +23,52 @@ nomnom.option('logLevel', {
   help: 'set logging level',
   choices: ['silly', 'debug', 'verbose', 'info', 'warning', 'error'],
   callback: function(logLevel) {
-    logger.transports.console.level = logLevel;
+    container.logger.transports.console.level = logLevel;
   }
 });
 
 nomnom.command('init')
   .help('create new container')
   .callback(function() {
-    cli.init();
+    container.cli.init();
   });
 
 nomnom.command('start')
   .help('start container')
   .callback(function() {
-    cli.start();
+    container.cli.start();
   });
 
 nomnom.command('stop')
   .help('stop container')
+  .callback(function() {
+    container.cli.stop();
+  });
+
+nomnom.command('enter')
+  .help('enter to container')
+  .callback(function() {
+    container.cli.enter();
+  });
+
+nomnom.command('proxy')
+  .help('run local proxy server')
+  .callback(function() {
+    container.cli.proxy();
+  });
+
+nomnom.command('open')
+  .help('open local proxy in browser')
+  .option('application', {
+    abbr: 'a',
+    help: 'application to open'
+  })
+  .callback(function(opts) {
+    container.cli.open(opts);
+  });
+
+nomnom.command('halt')
+  .help('stop all containers')
   .option('keepBoot2docker', {
     abbr: 'k',
     full: 'keep-boot2docker',
@@ -83,19 +76,7 @@ nomnom.command('stop')
     help: 'keep boot2docker started if all containers are stopped'
   })
   .callback(function(opts) {
-    cli.stop(opts);
-  });
-
-nomnom.command('enter')
-  .help('enter to container')
-  .callback(function() {
-    cli.enter();
-  });
-
-nomnom.command('proxy')
-  .help('run local proxy server')
-  .callback(function() {
-    cli.proxy();
+    container.cli.halt(opts);
   });
 
 nomnom.parse();

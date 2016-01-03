@@ -15,7 +15,8 @@
   },
   "bin": {
     "we": "./bin/we",
-    "we-proxy": "./bin/we-proxy"
+    "we-proxy": "./bin/we-proxy",
+    "we-daemon": "./bin/we-daemon"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,8 @@
     "winston": "~0.8",
     "request": "~2.48",
     "object-assign": "~1.0",
-    "express": "~4.10"
+    "express": "~4.10",
+    "handlebars": "~2.0"
   },
   "os": ["darwin"]
 }
